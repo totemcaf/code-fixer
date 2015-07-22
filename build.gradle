@@ -29,7 +29,7 @@ dependencies {
 task spoonFiles(type:JavaExec, dependsOn: configurations.compile) {
 	classpath configurations.spoon
 	main = "spoon.Launcher"
-	args '-v', '--tabs', '--vvv', '--precompile', '--with-imports', '-p', 'com.medallia.codefixer.MetaProgramGenerator', '-o', 'src/test/spooned', '-i', 'src/main/java/prototype'
+	args '-v', '--tabs', '--vvv', '--precompile', '--with-imports', '-p', 'com.medallia.codefixer.MetaProgramGenerator', '-o', 'src/test/spooned', '-i', 'src/samples/prototype'
 //, '--source-classpath', 'src/main/java'
 	// java -cp your-bin-folder:spoon-core-4.2.0-jar-with-dependencies.jar spoon.Launcher -i sourceFolder -p CatchProcessor
 	// -v --tabs --vvv --with-imports -p com.medallia.codefixer.MetaProgramGenerator -o src/test/spooned --source-classpath src/main/java -i prototype.GsonObjectTreeNavigator

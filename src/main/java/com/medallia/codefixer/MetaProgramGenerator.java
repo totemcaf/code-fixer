@@ -26,6 +26,7 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 
 	private static final EnumSet<BinaryOperatorKind> LOGICAL_OPERATORS = EnumSet.of(BinaryOperatorKind.AND, BinaryOperatorKind.OR);
 	private static final EnumSet<BinaryOperatorKind> COMPARISON_OPERATORS = EnumSet.of(BinaryOperatorKind.EQ, BinaryOperatorKind.GE, BinaryOperatorKind.GT, BinaryOperatorKind.LE, BinaryOperatorKind.LT, BinaryOperatorKind.NE);
+	private static final EnumSet<BinaryOperatorKind> REDUCED_COMPARISON_OPERATORS = EnumSet.of(BinaryOperatorKind.EQ, BinaryOperatorKind.NE);
 
 	@Override
 	public boolean isToBeProcessed(CtBinaryOperator<Boolean> element) {
@@ -38,7 +39,10 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 		if (LOGICAL_OPERATORS.contains(kind)) {
 			mutateOperator(binaryOperator, LOGICAL_OPERATORS);
 		} else if (COMPARISON_OPERATORS.contains(kind)) {
-			mutateOperator(binaryOperator, COMPARISON_OPERATORS);
+			if (binaryOperator.getLeftHandOperand().getType().isPrimitive())
+				mutateOperator(binaryOperator, COMPARISON_OPERATORS);
+			else
+				mutateOperator(binaryOperator, REDUCED_COMPARISON_OPERATORS);
 		}
 	}
 
