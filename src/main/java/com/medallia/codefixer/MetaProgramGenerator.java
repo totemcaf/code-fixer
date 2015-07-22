@@ -7,11 +7,20 @@ import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.BinaryOperatorKind;
 import spoon.reflect.code.CtBinaryOperator;
 import spoon.reflect.code.CtCodeSnippetExpression;
+import spoon.reflect.declaration.CtClass;
+import spoon.reflect.declaration.CtElement;
+import spoon.reflect.declaration.CtField;
+import spoon.reflect.declaration.CtPackage;
+import spoon.reflect.declaration.CtType;
+import spoon.reflect.declaration.ModifierKind;
+import spoon.reflect.reference.CtTypeReference;
 
 /**
  * Convert a program into a Meta-program
  */
 public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boolean>> {
+
+	public static final String SELECTOR_CLASS = Selector.class.getName();
 
 	private static int index = 0;
 
@@ -27,9 +36,9 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 		BinaryOperatorKind kind = binaryOperator.getKind();
 
 		if (LOGICAL_OPERATORS.contains(kind)) {
-			mutateLogicalOperator(binaryOperator);
+			mutateOperator(binaryOperator, LOGICAL_OPERATORS);
 		} else if (COMPARISON_OPERATORS.contains(kind)) {
-			mutateComparisonOperator(binaryOperator);
+			mutateOperator(binaryOperator, COMPARISON_OPERATORS);
 		}
 	}
 
@@ -44,29 +53,59 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 	 *
 	 * com.medallia.codefixer
 	 * @param operator
+	 * @param operators
 	 */
-	private void mutateComparisonOperator(final CtBinaryOperator<Boolean> operator) {
-		System.out.println("> " + operator);
-
+	private void mutateOperator(final CtBinaryOperator<Boolean> operator, EnumSet<BinaryOperatorKind> operators) {
 		int thisIndex = ++index;
 
-
-		String newExpression = COMPARISON_OPERATORS
+		String newExpression = operators
 			.stream()
 			.map(kind -> {
 				operator.setKind(kind);
-				return String.format("(_op(%s, \"%s\") && (%s))", thisIndex, kind, operator);
+				return String.format("(_s%s.is(\"%s\") && (%s))", thisIndex, kind, operator);
 			})
 			.collect(Collectors.joining(" || "));
-
-		System.out.println(">>> " + newExpression);
 
 		CtCodeSnippetExpression<Boolean> codeSnippet =  getFactory().Core().createCodeSnippetExpression();
 		codeSnippet.setValue(newExpression);
 
 		operator.replace(codeSnippet);
+
+		addVariableToClass(operator, thisIndex, operators);
 	}
 
-	private void mutateLogicalOperator(CtBinaryOperator<Boolean> operator) {
+	private void addVariableToClass(CtElement element, int index, EnumSet<BinaryOperatorKind> operators) {
+
+		CtCodeSnippetExpression<Object> codeSnippet =  getFactory().Core().createCodeSnippetExpression();
+
+		StringBuilder sb = new StringBuilder(SELECTOR_CLASS + ".of(").append(index);
+
+		for (BinaryOperatorKind kind : operators) {
+			sb.append(',').append('"').append(kind).append('"');
+		}
+
+		sb.append(")");
+
+		codeSnippet.setValue(sb.toString());
+
+		CtClass<?> type = getType(element);
+
+		CtTypeReference<Object> fieldType = getFactory().Type().createTypeParameterReference(SELECTOR_CLASS);
+		CtField<Object> field = getFactory().Field().create(type, EnumSet.of(ModifierKind.FINAL, ModifierKind.PRIVATE, ModifierKind.STATIC), fieldType, "_s" + index, codeSnippet);
+
+		type.addField(field);
+	}
+
+	private CtClass<?> getType(CtElement element) {
+		System.out.println("------");
+
+		CtClass parent = element.getParent(CtClass.class);
+		System.out.println(parent.getSimpleName());
+		while (!parent.isTopLevel()) {
+			parent = parent.getParent(CtClass.class);
+			System.out.println(parent.getSimpleName());
+		}
+
+		return parent;
 	}
 }
