@@ -1,0 +1,36 @@
+group 'com.medallia'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+	spoon {
+		extendsFrom compile
+	}
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+
+    spoon group: 'fr.inria.gforge.spoon', name: 'spoon-core', version: '4.2.0'
+	spoon 'com.google.code.gson:gson:2.2.4'
+	spoon 'com.google.guava:guava:18.0'
+	spoon files('build/classes/main')
+
+	compile 'com.google.code.gson:gson:2.2.4'
+	compile 'com.google.guava:guava:18.0'
+}
+
+
+task spoonFiles(type:JavaExec, dependsOn: configurations.compile) {
+	classpath configurations.spoon
+	main = "spoon.Launcher"
+	args '-v', '--tabs', '--vvv', '--precompile', '--with-imports', '-p', 'com.medallia.codefixer.MetaProgramGenerator', '-o', 'src/test/spooned', '-i', 'src/main/java/prototype'
+//, '--source-classpath', 'src/main/java'
+	// java -cp your-bin-folder:spoon-core-4.2.0-jar-with-dependencies.jar spoon.Launcher -i sourceFolder -p CatchProcessor
+	// -v --tabs --vvv --with-imports -p com.medallia.codefixer.MetaProgramGenerator -o src/test/spooned --source-classpath src/main/java -i prototype.GsonObjectTreeNavigator
+}
