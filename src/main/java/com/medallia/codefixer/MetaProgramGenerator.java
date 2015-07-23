@@ -1,8 +1,10 @@
 package com.medallia.codefixer;
 
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Sets;
 import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.BinaryOperatorKind;
 import spoon.reflect.code.CtBinaryOperator;
@@ -27,6 +29,8 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 	private static final EnumSet<BinaryOperatorKind> COMPARISON_OPERATORS = EnumSet.of(BinaryOperatorKind.EQ, BinaryOperatorKind.GE, BinaryOperatorKind.GT, BinaryOperatorKind.LE, BinaryOperatorKind.LT, BinaryOperatorKind.NE);
 	private static final EnumSet<BinaryOperatorKind> REDUCED_COMPARISON_OPERATORS = EnumSet.of(BinaryOperatorKind.EQ, BinaryOperatorKind.NE);
 
+	private Set<CtElement> hostSpots = Sets.newHashSet();
+
 	@Override
 	public boolean isToBeProcessed(CtBinaryOperator<Boolean> element) {
 		return LOGICAL_OPERATORS.contains(element.getKind()) || COMPARISON_OPERATORS.contains(element.getKind());
@@ -36,11 +40,11 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 		BinaryOperatorKind kind = binaryOperator.getKind();
 
 		if (LOGICAL_OPERATORS.contains(kind)) {
-			// mutateOperator(binaryOperator, LOGICAL_OPERATORS);
+			mutateOperator(binaryOperator, LOGICAL_OPERATORS);
 		} else if (COMPARISON_OPERATORS.contains(kind)) {
 			if (isPrimitiveNorBoolean(binaryOperator.getLeftHandOperand())
 				|| isPrimitiveNorBoolean(binaryOperator.getRightHandOperand())) {
-				//mutateOperator(binaryOperator, COMPARISON_OPERATORS);
+				mutateOperator(binaryOperator, COMPARISON_OPERATORS);
 			} else {
 				mutateOperator(binaryOperator, REDUCED_COMPARISON_OPERATORS);
 			}
@@ -61,26 +65,59 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 	 *    )
 	 *
 	 * com.medallia.codefixer
-	 * @param operator
+	 * @param expression
 	 * @param operators
 	 */
-	private void mutateOperator(final CtBinaryOperator<Boolean> operator, EnumSet<BinaryOperatorKind> operators) {
+	private void mutateOperator(final CtBinaryOperator<Boolean> expression, EnumSet<BinaryOperatorKind> operators) {
+
+		System.out.println(String.format("Expression '%s'", expression));
+		if (alreadyInHotsSpot(expression) || expression.toString().contains(".is(\"")) {
+			System.out.println(String.format("Expression '%s' ignored because it is included in previous hot spot", expression));
+			return;
+		}
+
 		int thisIndex = ++index;
 
 		String newExpression = operators
 			.stream()
 			.map(kind -> {
-				operator.setKind(kind);
-				return String.format("(_s%s.is(\"%s\") && (%s))", thisIndex, kind, operator);
+				expression.setKind(kind);
+				return String.format("(_s%s.is(\"%s\") && (%s))", thisIndex, kind, expression);
 			})
 			.collect(Collectors.joining(" || "));
 
 		CtCodeSnippetExpression<Boolean> codeSnippet =  getFactory().Core().createCodeSnippetExpression();
 		codeSnippet.setValue(newExpression);
 
-		operator.replace(codeSnippet);
+		expression.replace(codeSnippet);
+		expression.replace(expression);
 
-		addVariableToClass(operator, thisIndex, operators);
+		hostSpots.add(expression);
+
+		addVariableToClass(expression, thisIndex, operators);
+	}
+
+	/**
+	 * Check if this sub expression was already inside an uppermost expression that was processed has a hot spot.
+	 * This version does not allowed conflicting hot spots
+	 * @param element the current expression to test
+	 * @return true if this expression is descendant of an already processed expression
+	 */
+	private boolean alreadyInHotsSpot(CtElement element) {
+		CtElement parent = element.getParent();
+
+		while (!isTopLevel(parent)) {
+			if (hostSpots.contains(parent))
+				return true;
+
+			parent = parent.getParent();
+		}
+
+		return false;
+	}
+
+	private boolean isTopLevel(CtElement parent) {
+		return parent instanceof CtClass && ((CtClass) parent).isTopLevel();
 	}
 
 	private void addVariableToClass(CtElement element, int index, EnumSet<BinaryOperatorKind> operators) {
