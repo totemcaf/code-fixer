@@ -1,8 +1,10 @@
 package com.medallia.codefixer;
 
+import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
 /**
@@ -14,7 +16,8 @@ public class Selector {
 	private final int hotSpot;
 	private final String[] variants;
 
-	private int chosenVariant = -1;
+	private int chosenVariant = -1; // TODO ser default base on original source
+	private long stopTime;
 
 	public Selector(int hotSpot, String[] variants) {
 		this.hotSpot = hotSpot;
@@ -26,16 +29,17 @@ public class Selector {
 
 		selectors.put(hotSpot, selector);
 
-		selector.choose();
-
 		return selector;
 	}
 
-	public void choose() {
-		chosenVariant = 0;
+	public void choose(int option) {
+		chosenVariant = option;
 	}
 
 	public boolean is(String variant) {
+		if (System.currentTimeMillis() > stopTime)
+			throw new StopTimeExceededError("In selector " + hotSpot + " with option " + chosenVariant + " checking for " + variant);
+
 		return chosenVariant >= 0 && variants[chosenVariant].equals(variant);
 	}
 
@@ -45,5 +49,25 @@ public class Selector {
 			.add("hotSpot", hotSpot)
 			.add("variants", variants)
 			.toString();
+	}
+
+	public static List<Selector> allSelectors() {
+		return ImmutableList.copyOf(selectors.values());
+	}
+
+	public int getOptionCount() {
+		return variants.length;
+	}
+
+	public void setStopTime(long stopTime) {
+
+		this.stopTime = stopTime;
+	}
+
+	public static class StopTimeExceededError extends RuntimeException {   // TODO THis can be cached !!
+
+		public StopTimeExceededError(String message) {
+			super(message);
+		}
 	}
 }

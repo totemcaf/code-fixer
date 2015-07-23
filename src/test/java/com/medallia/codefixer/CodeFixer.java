@@ -1,17 +1,106 @@
 package com.medallia.codefixer;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import org.junit.internal.TextListener;
 import org.junit.runner.JUnitCore;
+import org.junit.runner.Result;
+import prototype.GsonObjectTreeNavigator;
 import prototype.GsonObjectTreeNavigatorTest;
 
 /**
- * Created by carlos on 7/21/15.
+ * Run the tests against all the variations to choose a candidate fix
  */
 public class CodeFixer {
 
+	public static final Class<GsonObjectTreeNavigatorTest> TEST_CLASS = GsonObjectTreeNavigatorTest.class;
+
 	public static void main(String[] args) {
+
+		boolean debug = ImmutableList.copyOf(args).contains("debug");
+
+		new GsonObjectTreeNavigator(null);
+
 		JUnitCore core = new JUnitCore();
 
-		core.run(GsonObjectTreeNavigatorTest.class);
+		if (debug)
+			core.addListener(new TextListener(System.out));
 
+		List<Selector> selectors = Selector.allSelectors();
+
+		List<String> successes = Lists.newArrayList();
+		List<String> failures = Lists.newArrayList();
+
+		// Execute the test for each hot spot permutation
+		for (int options[] : permutations(selectors.stream().map(Selector::getOptionCount).collect(Collectors.toList()))) {
+
+			for (int i = options.length - 1; i >= 0; i--) {
+				selectors.get(i).choose(options[i]);
+				selectors.get(i).setStopTime(System.currentTimeMillis() + 30_000);
+			}
+
+			if (debug)
+				System.out.println("Checking options: " + Arrays.toString(options));
+
+			Result result = core.run(TEST_CLASS);
+
+			if (result.wasSuccessful())
+				successes.add("   Worked !!!  -> " + Arrays.toString(options));
+			else
+				failures.add(String.format("%s -> It has %s failures out of %s runs in %s ms", Arrays.toString(options), result.getFailureCount(), result.getRunCount(), result.getRunTime()));
+		}
+
+		// Show result summary
+		if (debug)
+			failures.forEach(System.out::println);
+
+		if (successes.isEmpty())
+			System.out.println("Sorry, we could find a succesfull option");
+		else
+			successes.forEach(System.out::println);
+	}
+
+	/**
+	 * Computes an iterable though all the permutations or the values in the ranges provided
+	 * @param sizes the number of elements in each range (from 0 to size - 1)
+	 * @return an Iterable
+	 */
+	private static Iterable<int[]> permutations(List<Integer> sizes) {
+		int limits[] = new int[sizes.size()];
+
+		int last = sizes.size() - 1;
+		for (int i = last; i >= 0; i--)
+			limits[i] = sizes.get(i) - 1;
+
+
+		return () -> new Iterator<int[]>() {
+			int current[] = new int[last + 1];
+
+			{
+				current[last]--;  // Force the first element
+			}
+
+			@Override public boolean hasNext() {
+				return !Arrays.equals(limits, current);
+			}
+
+			@Override public int[] next() {
+				for (int i = last; i >= 0; i--) {
+					if (current[i] < limits[i]) {
+						current[i] ++;
+
+						return current.clone();
+					}
+					current[i] = 0;
+				}
+
+				return new int[0];
+			}
+		};
 	}
 }
