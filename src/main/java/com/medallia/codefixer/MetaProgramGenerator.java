@@ -7,11 +7,10 @@ import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.BinaryOperatorKind;
 import spoon.reflect.code.CtBinaryOperator;
 import spoon.reflect.code.CtCodeSnippetExpression;
+import spoon.reflect.code.CtExpression;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtElement;
 import spoon.reflect.declaration.CtField;
-import spoon.reflect.declaration.CtPackage;
-import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.reference.CtTypeReference;
 
@@ -39,11 +38,16 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 		if (LOGICAL_OPERATORS.contains(kind)) {
 			mutateOperator(binaryOperator, LOGICAL_OPERATORS);
 		} else if (COMPARISON_OPERATORS.contains(kind)) {
-			if (binaryOperator.getLeftHandOperand().getType().isPrimitive())
+			if (isPrimitiveNorBoolean(binaryOperator.getLeftHandOperand())
+				|| isPrimitiveNorBoolean(binaryOperator.getRightHandOperand()))
 				mutateOperator(binaryOperator, COMPARISON_OPERATORS);
 			else
 				mutateOperator(binaryOperator, REDUCED_COMPARISON_OPERATORS);
 		}
+	}
+
+	private boolean isPrimitiveNorBoolean(CtExpression<?> operand) {
+		return operand.getType().isPrimitive() && !operand.getType().getSimpleName().equals("boolean");
 	}
 
 	/**
@@ -101,13 +105,9 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 	}
 
 	private CtClass<?> getType(CtElement element) {
-		System.out.println("------");
-
 		CtClass parent = element.getParent(CtClass.class);
-		System.out.println(parent.getSimpleName());
 		while (!parent.isTopLevel()) {
 			parent = parent.getParent(CtClass.class);
-			System.out.println(parent.getSimpleName());
 		}
 
 		return parent;
