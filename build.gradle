@@ -21,13 +21,23 @@ dependencies {
 	spoon 'com.google.guava:guava:18.0'
 	spoon files('build/classes/main')
 
+    compile group: 'fr.inria.gforge.spoon', name: 'spoon-core', version: '4.2.0'
 	compile 'com.google.code.gson:gson:2.2.4'
 	compile 'com.google.guava:guava:18.0'
 }
 
 
 task spoonFiles(type:JavaExec, dependsOn: configurations.compile) {
+	description 'Creates the meta program transforming some instructions.'
 	classpath configurations.spoon
 	main = "spoon.Launcher"
 	args '-v', '--tabs', '--vvv', '--precompile', '--with-imports', '-p', 'com.medallia.codefixer.MetaProgramGenerator', '-o', 'src/test/spooned', '-i', 'src/samples/prototype'
 }
+
+task copyFiles(type:JavaExec, dependsOn: configurations.compile) {
+	description 'Creates the Meta program without any change (identity transformation). Used to check if the original code pass the tests.'
+	classpath configurations.spoon
+	main = "spoon.Launcher"
+	args '-v', '--tabs', '--vvv', '--precompile', '--with-imports', '-o', 'src/test/spooned', '-i', 'src/samples/prototype'
+}
+
