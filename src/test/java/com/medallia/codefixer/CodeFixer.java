@@ -33,6 +33,10 @@ public class CodeFixer {
 
 		List<Selector> selectors = Selector.allSelectors();
 
+		if (selectors.isEmpty())
+			// There's no hot spot in program. Add one to run it at least once
+			selectors = ImmutableList.of(Selector.of(0, "n/a"));
+
 		List<String> successes = Lists.newArrayList();
 		List<String> failures = Lists.newArrayList();
 
@@ -56,11 +60,12 @@ public class CodeFixer {
 		}
 
 		// Show result summary
-		if (debug)
-			failures.forEach(System.out::println);
+		failures.forEach(System.out::println);
+
+		System.out.println();
 
 		if (successes.isEmpty())
-			System.out.println("Sorry, we could find a succesfull option");
+			System.out.println("Oops, sorry, we could find a successful option");
 		else
 			successes.forEach(System.out::println);
 	}

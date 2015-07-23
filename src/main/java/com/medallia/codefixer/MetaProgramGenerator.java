@@ -36,13 +36,14 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 		BinaryOperatorKind kind = binaryOperator.getKind();
 
 		if (LOGICAL_OPERATORS.contains(kind)) {
-			mutateOperator(binaryOperator, LOGICAL_OPERATORS);
+			// mutateOperator(binaryOperator, LOGICAL_OPERATORS);
 		} else if (COMPARISON_OPERATORS.contains(kind)) {
 			if (isPrimitiveNorBoolean(binaryOperator.getLeftHandOperand())
-				|| isPrimitiveNorBoolean(binaryOperator.getRightHandOperand()))
-				mutateOperator(binaryOperator, COMPARISON_OPERATORS);
-			else
+				|| isPrimitiveNorBoolean(binaryOperator.getRightHandOperand())) {
+				//mutateOperator(binaryOperator, COMPARISON_OPERATORS);
+			} else {
 				mutateOperator(binaryOperator, REDUCED_COMPARISON_OPERATORS);
+			}
 		}
 	}
 
