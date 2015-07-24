@@ -78,6 +78,7 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 
 		int thisIndex = ++index;
 
+		String originalKind = expression.getKind().toString();
 		String newExpression = operators
 			.stream()
 			.map(kind -> {
@@ -91,10 +92,10 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 
 		expression.replace(codeSnippet);
 		expression.replace(expression);
+		addVariableToClass(expression, originalKind, thisIndex, operators);
 
 		hostSpots.add(expression);
 
-		addVariableToClass(expression, thisIndex, operators);
 	}
 
 	/**
@@ -120,13 +121,17 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 		return parent instanceof CtClass && ((CtClass) parent).isTopLevel();
 	}
 
-	private void addVariableToClass(CtElement element, int index, EnumSet<BinaryOperatorKind> operators) {
+	private void addVariableToClass(CtElement element, String originalKind, int index, EnumSet<BinaryOperatorKind> operators) {
 
 		CtCodeSnippetExpression<Object> codeSnippet =  getFactory().Core().createCodeSnippetExpression();
 
 		StringBuilder sb = new StringBuilder(SELECTOR_CLASS + ".of(").append(index);
 
+		sb.append(',').append('"').append(originalKind).append('"');
 		for (BinaryOperatorKind kind : operators) {
+			if (kind.toString().equals(originalKind)) {
+				continue;
+			}
 			sb.append(',').append('"').append(kind).append('"');
 		}
 
