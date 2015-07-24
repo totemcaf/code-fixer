@@ -1,5 +1,5 @@
 # code-fixer
-Prototype for an Automatic Software Repair tool
+Prototype for an Automatic Software Repair Tool for Java Programs based on Meta-Programs.
 
 This is a grading exercise for the ECI 2015 course: http://www.monperrus.net/martin/eci2015
 
