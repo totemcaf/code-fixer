@@ -64,6 +64,14 @@ public class Selector {
 		this.stopTime = stopTime;
 	}
 
+	public String getChosenOptionDescription() {
+		if ((chosenVariant >= 0) && (chosenVariant < variants.length)) {
+			return variants[chosenVariant];
+		} else {
+			return "n/a";
+		}
+	}
+
 	public static class StopTimeExceededError extends RuntimeException {   // TODO THis can be cached !!
 
 		public StopTimeExceededError(String message) {

@@ -48,12 +48,14 @@ public class CodeFixer {
 		List<String> failures = Lists.newArrayList();
 		Multimap<Integer, String> failures2 = Multimaps.newListMultimap(Maps.newHashMap(), Lists::newArrayList);
 
+		String[] namedOptions = new String[selectors.size()];
 		// Execute the test for each hot spot permutation
 		for (int options[] : permutations(selectors.stream().map(Selector::getOptionCount).collect(Collectors.toList()))) {
 
 			for (int i = options.length - 1; i >= 0; i--) {
 				selectors.get(i).choose(options[i]);
 				selectors.get(i).setStopTime(System.currentTimeMillis() + 30_000);
+				namedOptions[i] = selectors.get(i).getChosenOptionDescription();
 			}
 
 			if (debug)
@@ -62,9 +64,10 @@ public class CodeFixer {
 			Result result = core.run(TEST_CLASS);
 
 			if (result.wasSuccessful())
-				successes.add("   Worked !!!  -> " + Arrays.toString(options));
+				successes.add("   Worked !!!  -> " + Arrays.toString(options) + " / " + Arrays.toString(namedOptions));
 			else {
-				String txt = String.format("%s -> It has %s failures out of %s runs in %s ms", Arrays.toString(options), result.getFailureCount(), result.getRunCount(), result.getRunTime());
+				String txt = String.format("%s / %s -> It has %s failures out of %s runs in %s ms", 
+						Arrays.toString(options), Arrays.toString(namedOptions), result.getFailureCount(), result.getRunCount(), result.getRunTime());
 				failures.add(txt);
 				failures2.put(result.getFailureCount(), txt);
 			}
