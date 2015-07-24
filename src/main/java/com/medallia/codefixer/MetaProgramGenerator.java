@@ -88,7 +88,7 @@ public class MetaProgramGenerator extends AbstractProcessor<CtBinaryOperator<Boo
 			.collect(Collectors.joining(" || "));
 
 		CtCodeSnippetExpression<Boolean> codeSnippet =  getFactory().Core().createCodeSnippetExpression();
-		codeSnippet.setValue(newExpression);
+		codeSnippet.setValue('(' + newExpression + ')');
 
 		expression.replace(codeSnippet);
 		expression.replace(expression);
