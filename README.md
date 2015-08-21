@@ -5,7 +5,7 @@ This is a grading exercise for the ECI 2015 course: http://www.monperrus.net/mar
 
 How to run it with gradle:
 
-gradle clean compileJava spoonFiles compileTest fix
+    gradle clean compileJava spoonFiles compileTest fix
 
 This exercise uses: https://github.com/INRIA/spoon
 
